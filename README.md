@@ -1,3 +1,26 @@
+# 对于本仓库的说明
+
+本项目为基于 [Caldis](https://github.com/Caldis) 原始作品[Mos](https://github.com/Caldis/Mos)（CC BY-NC 4.0 许可）进行的二次开发版本。
+
+对原项目进行了修改与调整，供个人使用，相关版权仍归原作者所有。
+
+本项目仅限非商业用途。任何使用、传播或改编行为均需保留原作者署名，并遵守 CC BY-NC 4.0 许可协议。
+
+许可协议全文：
+https://creativecommons.org/licenses/by-nc/4.0/
+
+## 自定义内容
+
+1. 添加更多鼠标快捷键绑定，支持部分鼠标的倾斜滚轮（Tilt Wheel） 、滚轮上下滚动作为快捷键，支持多按键快捷键。
+2. 修改快捷键绑定方式为键盘组合键、支持更强的自定义。
+3. 支持鼠标速度加速度调节
+4. 更多细节调整与优化
+5. 其他功能开发中...
+
+> 如果你想要使用该版本，请自行编译该软件。该软件与原 Mos 版本的安装包不兼容，安装将直接替换原Mos版本。
+
+# 原项目说明
+
 <p align="center">
   <a href="http://mos.caldis.me/">
     <img width="320" src="https://github.com/Caldis/Mos/blob/master/dmg/dmg-icon.png?raw=true">
@@ -5,17 +28,12 @@
 </p>
 
 
-# Mos
+## Mos
 
 ![Xcode 9.0+](https://img.shields.io/badge/Xcode-9.0%2B-blue.svg)
 ![Swift 4.0+](https://img.shields.io/badge/Swift-4.0%2B-orange.svg)
 
 一个用于在MacOS上平滑你的鼠标滚动效果的小工具, 让你的滚轮爽如触控板。
-
-[中文](https://github.com/Caldis/Mos/blob/master/README.md) | [English](https://github.com/Caldis/Mos/blob/master/README.enUS.md) |
-[Русский](https://github.com/Caldis/Mos/blob/master/README.ru.md) |
-[Indonesia](https://github.com/Caldis/Mos/blob/master/README.id.md)
-
 
 ## 主页
 
