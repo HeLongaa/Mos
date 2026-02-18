@@ -32,8 +32,9 @@ struct PANEL_IDENTIFIER {
     static let scrolling = "scrolling"
     static let scrollingWithApplication = "scrollingWithApplication"
     static let buttons = "buttons"
+    static let mouse = "mouse"
     static let application = "application"
-    static let list = [general, scrolling, buttons, application]
+    static let list = [general, scrolling, buttons, mouse, application]
 }
 let PANEL_PADDING = CGFloat(42.0) // 顶部导航栏高度
 let TOOLBAR_HEIGHT = CGFloat(80.0) // 偏好的 Toolbar 高度
@@ -94,19 +95,6 @@ class OPTIONS_GENERAL_DEFAULT {
     var hideStatusItem = false {
         willSet {newValue ? StatusItemManager.hideStatusItem() : StatusItemManager.showStatusItem()}
         didSet {Options.shared.saveOptions()}
-    }
-}
-
-// 更新
-class OPTIONS_UPDATE_DEFAULT {
-    // 启动时自动检查更新
-    var checkOnAppStart = false {
-        didSet { Options.shared.saveOptions() }
-    }
-
-    // 包含 beta 版本
-    var includingBetaVersion = false {
-        didSet { Options.shared.saveOptions() }
     }
 }
 
@@ -196,6 +184,22 @@ extension OPTIONS_SCROLL_DEFAULT: Equatable {
             l.smoothHorizontal == r.smoothHorizontal &&
             l.durationBeforeSimTrackpadLock == r.durationBeforeSimTrackpadLock
         )
+    }
+}
+
+// 鼠标
+class OPTIONS_MOUSE_DEFAULT {
+    // 是否启用自定义鼠标设置
+    var enabled: Bool = false {
+        didSet { Options.shared.saveOptions() }
+    }
+    // 指针速度 (0.1 ~ 10.0)
+    var speed: Double = 1.0 {
+        didSet { Options.shared.saveOptions() }
+    }
+    // 加速度 (0 ~ 10.0)，0 = 线性模式（无加速度），>0 = 自定义加速度曲线
+    var acceleration: Double = 1.0 {
+        didSet { Options.shared.saveOptions() }
     }
 }
 

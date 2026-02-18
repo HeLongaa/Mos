@@ -13,6 +13,13 @@ class PreferencesButtonsViewController: NSViewController {
     // MARK: - Recorder
     private var recorder = KeyRecorder()
 
+    // MARK: - 录制上下文 (区分触发键录制和目标快捷键录制)
+    private enum RecordingContext {
+        case trigger
+        case target(bindingId: UUID)
+    }
+    private var recordingContext: RecordingContext = .trigger
+
     // MARK: - Data
     private var buttonBindings: [ButtonBinding] = []
 
@@ -26,36 +33,31 @@ class PreferencesButtonsViewController: NSViewController {
     @IBOutlet weak var createButton: PrimaryButton!
     @IBOutlet weak var addButton: NSButton!
     @IBOutlet weak var delButton: NSButton!
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        // 设置代理
         recorder.delegate = self
         tableView.delegate = self
         tableView.dataSource = self
-        // 读取设置
         loadOptionsToView()
     }
-    
+
     override func viewWillAppear() {
-        // 检查表格数据
         toggleNoDataHint()
-        // 设置录制按钮回调
         setupRecordButtonCallback()
     }
 
-    // 添加
+    // 添加触发键（组合键模式）
     @IBAction func addItemClick(_ sender: NSButton) {
+        recordingContext = .trigger
         recorder.startRecording(from: sender)
     }
+
     // 删除
     @IBAction func removeItemClick(_ sender: NSButton) {
-        // 确保选择了行
         guard tableView.selectedRow != -1 else { return }
-        // 统一通过 removeButtonBinding 处理删除逻辑
         let binding = buttonBindings[tableView.selectedRow]
         removeButtonBinding(id: binding.id)
-        // 更新删除按钮状态
         updateDelButtonState()
     }
 }
@@ -81,34 +83,51 @@ extension PreferencesButtonsViewController {
         delButton.isEnabled = tableView.selectedRow != -1
     }
 
-    // 设置录制按钮回调
+    // 设置录制按钮回调（createButton 用于空状态页）
     private func setupRecordButtonCallback() {
         createButton.onMouseDown = { [weak self] target in
-            self?.recorder.startRecording(from: target)
+            guard let self = self else { return }
+            self.recordingContext = .trigger
+            self.recorder.startRecording(from: target)
         }
     }
-    
-    // 添加录制事件到列表
-    private func addRecordedEvent(_ event: CGEvent, isDuplicate: Bool) {
+
+    // 添加触发键录制结果到列表
+    private func addRecordedTrigger(_ event: CGEvent, holdButton: UInt16?, isDuplicate: Bool) {
         let recordedEvent = RecordedEvent(from: event)
 
-        // 如果是重复录制,高亮已存在行
         if isDuplicate {
-            if let existing = buttonBindings.first(where: { $0.triggerEvent == recordedEvent }) {
+            if let existing = buttonBindings.first(where: { $0.triggerEvent == recordedEvent && $0.holdButton == holdButton }) {
                 highlightExistingRow(with: existing.id)
             }
             return
         }
 
-        // 新录制的事件不设置默认快捷键，等待用户选择
-        let binding = ButtonBinding(triggerEvent: recordedEvent, systemShortcutName: "", isEnabled: false)
+        let binding = ButtonBinding(triggerEvent: recordedEvent, holdButton: holdButton, targetShortcut: nil, isEnabled: false)
         buttonBindings.append(binding)
         tableView.reloadData()
         toggleNoDataHint()
         syncViewWithOptions()
     }
 
-    // 高亮已存在的行 (用于重复录制的视觉反馈)
+    // 更新目标快捷键绑定
+    func updateButtonBinding(id: UUID, targetShortcut: RecordedEvent?) {
+        guard let index = buttonBindings.firstIndex(where: { $0.id == id }) else { return }
+        let old = buttonBindings[index]
+        let updated = ButtonBinding(
+            id: old.id,
+            triggerEvent: old.triggerEvent,
+            holdButton: old.holdButton,
+            targetShortcut: targetShortcut,
+            isEnabled: targetShortcut != nil
+        )
+        buttonBindings[index] = updated
+        tableView.reloadData()
+        toggleNoDataHint()
+        syncViewWithOptions()
+    }
+
+    // 高亮已存在的行 (重复录制触发键时的视觉反馈)
     private func highlightExistingRow(with id: UUID) {
         guard let row = buttonBindings.firstIndex(where: { $0.id == id }) else { return }
         tableView.deselectAll(nil)
@@ -123,38 +142,6 @@ extension PreferencesButtonsViewController {
         buttonBindings.removeAll(where: { $0.id == id })
         tableView.reloadData()
         toggleNoDataHint()
-        syncViewWithOptions()
-    }
-
-    /// 更新按钮绑定
-    /// - Parameters:
-    ///   - id: 绑定记录的唯一标识
-    ///   - shortcut: 系统快捷键对象,nil 表示清除绑定
-    func updateButtonBinding(id: UUID, with shortcut: SystemShortcut.Shortcut?) {
-        guard let index = buttonBindings.firstIndex(where: { $0.id == id }) else { return }
-
-        let oldBinding = buttonBindings[index]
-
-        let updatedBinding: ButtonBinding
-        if let shortcut = shortcut {
-            // 绑定快捷键:直接使用快捷键的 identifier
-            updatedBinding = ButtonBinding(
-                id: oldBinding.id,
-                triggerEvent: oldBinding.triggerEvent,
-                systemShortcutName: shortcut.identifier,
-                isEnabled: true
-            )
-        } else {
-            // 清除绑定:保持触发事件,清空快捷键名称并禁用
-            updatedBinding = ButtonBinding(
-                id: oldBinding.id,
-                triggerEvent: oldBinding.triggerEvent,
-                systemShortcutName: "",
-                isEnabled: false
-            )
-        }
-
-        buttonBindings[index] = updatedBinding
         syncViewWithOptions()
     }
 }
@@ -175,19 +162,21 @@ extension PreferencesButtonsViewController: NSTableViewDelegate, NSTableViewData
         view.isHidden = !visible
         view.animator().alphaValue = visible ? 1 : 0
     }
-    
+
     // 表格数据源
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard let tableColumnIdentifier = tableColumn?.identifier else { return nil }
 
-        // 创建 Cell
         if let cell = tableView.makeView(withIdentifier: tableColumnIdentifier, owner: self) as? ButtonTableCellView {
             let binding = buttonBindings[row]
 
             cell.configure(
                 with: binding,
-                onShortcutSelected: { [weak self] shortcut in
-                    self?.updateButtonBinding(id: binding.id, with: shortcut)
+                onTargetRecordRequested: { [weak self] sourceView in
+                    guard let self = self else { return }
+                    // 开始录制目标键盘快捷键
+                    self.recordingContext = .target(bindingId: binding.id)
+                    self.recorder.startRecording(from: sourceView, mode: .keyboardOnly)
                 },
                 onDeleteRequested: { [weak self] in
                     self?.removeButtonBinding(id: binding.id)
@@ -198,12 +187,12 @@ extension PreferencesButtonsViewController: NSTableViewDelegate, NSTableViewData
 
         return nil
     }
-    
+
     // 行高
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
         return 44
     }
-    
+
     // 行数
     func numberOfRows(in tableView: NSTableView) -> Int {
         return buttonBindings.count
@@ -218,26 +207,37 @@ extension PreferencesButtonsViewController: NSTableViewDelegate, NSTableViewData
     func tableView(_ tableView: NSTableView, typeSelectStringFor tableColumn: NSTableColumn?, row: Int) -> String? {
         guard row < buttonBindings.count else { return nil }
         let components = buttonBindings[row].triggerEvent.displayComponents
-        // 去掉第一项（修饰键），只保留实际按键用于匹配
         let keyOnly = components.count > 1 ? Array(components.dropFirst()) : components
         return keyOnly.joined(separator: " ")
     }
 }
 
-// MARK: - EventRecorderDelegate
+// MARK: - KeyRecorderDelegate
 extension PreferencesButtonsViewController: KeyRecorderDelegate {
-    // 验证录制的事件是否重复
+    // 验证录制的事件 (触发键录制时检查重复；目标快捷键录制时不检查重复)
     func validateRecordedEvent(_ recorder: KeyRecorder, event: CGEvent) -> Bool {
-        let recordedEvent = RecordedEvent(from: event)
-        // 返回 true = 新录制(绿色), false = 重复(蓝色)
-        return !buttonBindings.contains(where: { $0.triggerEvent == recordedEvent })
+        switch recordingContext {
+        case .trigger:
+            let recordedEvent = RecordedEvent(from: event)
+            let holdButton = recorder.detectedHoldButton
+            return !buttonBindings.contains(where: { $0.triggerEvent == recordedEvent && $0.holdButton == holdButton })
+        case .target:
+            return true  // 目标快捷键不检查重复
+        }
     }
 
-    // Record 回调 (isDuplicate 由 KeyRecorder 传递,避免重复验证)
+    // 录制完成回调
     func onEventRecorded(_ recorder: KeyRecorder, didRecordEvent event: CGEvent, isDuplicate: Bool) {
-        // 添加延迟后调用, 确保不要太早消失
+        let holdButton = recorder.detectedHoldButton
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.66) { [weak self] in
-            self?.addRecordedEvent(event, isDuplicate: isDuplicate)
+            guard let self = self else { return }
+            switch self.recordingContext {
+            case .trigger:
+                self.addRecordedTrigger(event, holdButton: holdButton, isDuplicate: isDuplicate)
+            case .target(let bindingId):
+                let targetShortcut = RecordedEvent(from: event)
+                self.updateButtonBinding(id: bindingId, targetShortcut: targetShortcut)
+            }
         }
     }
 }

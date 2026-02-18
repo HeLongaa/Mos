@@ -1,0 +1,8 @@
+<svg width="135" height="135" viewBox="0 0 135 135" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Mouse outer body outline -->
+  <path d="M44 50C44 36 55 24 67.5 24C80 24 91 36 91 50L91 86C91 100 80 111 67.5 111C55 111 44 100 44 86L44 50Z" stroke="black" stroke-width="5.5" fill="none" stroke-linejoin="round"/>
+  <!-- Center divider between left/right buttons -->
+  <line x1="67.5" y1="25" x2="67.5" y2="68" stroke="black" stroke-width="5.5" stroke-linecap="round"/>
+  <!-- Scroll wheel -->
+  <rect x="63" y="40" width="9" height="22" rx="4.5" fill="black"/>
+</svg>

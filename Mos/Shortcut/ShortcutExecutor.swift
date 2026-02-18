@@ -26,20 +26,30 @@ class ShortcutExecutor {
     func execute(code: CGKeyCode, flags: UInt64, preserveFlagsOnKeyUp: Bool = false) {
         // 创建事件源
         guard let source = CGEventSource(stateID: .hidSystemState) else {
-            // NSLog("ShortcutExecutor: Failed to create event source")
+            NSLog("ShortcutExecutor: Failed to create event source")
             return
         }
 
+        // 方向键和导航键在 macOS 中自动携带 maskNumericPad 和 maskSecondaryFn
+        // 合成事件也需要补充这些标志, 否则依赖这些标志的系统快捷键 (如 Ctrl+↑ 调度中心) 不会触发
+        var effectiveFlags = flags
+        if KeyCode.numpadAwareKeys.contains(code) {
+            effectiveFlags |= CGEventFlags.maskNumericPad.rawValue
+            effectiveFlags |= CGEventFlags.maskSecondaryFn.rawValue
+        }
+
+        NSLog("ShortcutExecutor: execute code=\(code) flags=0x\(String(effectiveFlags, radix: 16))")
+
         // 发送按键按下事件
         if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: code, keyDown: true) {
-            keyDown.flags = CGEventFlags(rawValue: flags)
+            keyDown.flags = CGEventFlags(rawValue: effectiveFlags)
             keyDown.post(tap: .cghidEventTap)
         }
 
         // 发送按键抬起事件
         if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: code, keyDown: false) {
             if preserveFlagsOnKeyUp {
-                keyUp.flags = CGEventFlags(rawValue: flags)
+                keyUp.flags = CGEventFlags(rawValue: effectiveFlags)
             }
             keyUp.post(tap: .cghidEventTap)
         }

@@ -112,8 +112,24 @@ struct RecordedEvent: Codable, Equatable {
 
     // MARK: - INIT
     init(from event: CGEvent) {
-        // 修饰键
-        self.modifiers = UInt(event.flags.rawValue)
+        // 修饰键: 只保留用户可见的4个修饰键标志位, 过滤系统内部标志
+        self.modifiers = UInt(event.flags.rawValue & KeyCode.modifiersMask)
+        // 倾斜滚轮事件: 使用虚拟码 21/22 表示左/右倾斜
+        if event.isTiltWheelEvent {
+            let deltaX = event.getDoubleValueField(.scrollWheelEventPointDeltaAxis2)
+            self.type = .mouse
+            self.code = deltaX > 0 ? KeyCode.scrollWheelRight : KeyCode.scrollWheelLeft
+            self.displayComponents = event.displayComponents
+            return
+        }
+        // 垂直滚轮事件: 使用虚拟码 23/24 表示上/下滚动
+        if event.isVerticalScrollEvent {
+            let deltaY = event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+            self.type = .mouse
+            self.code = deltaY < 0 ? KeyCode.scrollWheelUp : KeyCode.scrollWheelDown
+            self.displayComponents = event.displayComponents
+            return
+        }
         // 根据事件类型匹配
         if event.isKeyboardEvent {
             self.type = .keyboard
@@ -129,32 +145,54 @@ struct RecordedEvent: Codable, Equatable {
     // MARK: - 匹配方法
     /// 检查是否与给定的 CGEvent 匹配
     func matches(_ event: CGEvent) -> Bool {
-        // Guard: 修饰键匹配
-        guard event.flags.rawValue == modifiers else { return false }
-        // 根据类型匹配
+        let mask = KeyCode.modifiersMask
         switch type {
             case .keyboard:
-                // Guard: 键盘事件 (这里只匹配 keyDown)
+                // 键盘触发: 修饰键精确匹配 + 按键码匹配
+                guard (event.flags.rawValue & mask) == (UInt64(modifiers) & mask) else { return false }
                 guard event.type == .keyDown else { return false }
-                // 匹配 code
                 return code == Int(event.getIntegerValueField(.keyboardEventKeycode))
             case .mouse:
-                // Guard: 鼠标事件
-                guard event.type != .keyDown && event.type != .keyUp else { return false }
-                // 匹配 code
+                // 鼠标触发: 修饰键使用「包含」检查 (录制的修饰键必须是事件修饰键的子集)
+                // 部分鼠标驱动 (如 Logitech Options+) 会在 cgAnnotatedSessionEventTap 层自动注入
+                // 额外的修饰键标志, 而录制时在 cgSessionEventTap 层看不到这些标志.
+                // 使用子集检查: 只要录制时记录的修饰键都出现在事件中即可匹配.
+                let recordedMods = UInt64(modifiers) & mask
+                let eventMods = event.flags.rawValue & mask
+                guard (eventMods & recordedMods) == recordedMods else { return false }
+                // 虚拟滚轮倾斜码 (21=左, 22=右): 匹配倾斜滚轮方向
+                if code == KeyCode.scrollWheelLeft || code == KeyCode.scrollWheelRight {
+                    guard event.isTiltWheelEvent else { return false }
+                    let deltaX = event.getDoubleValueField(.scrollWheelEventPointDeltaAxis2)
+                    if code == KeyCode.scrollWheelLeft { return deltaX < 0 }
+                    if code == KeyCode.scrollWheelRight { return deltaX > 0 }
+                    return false
+                }
+                // 虚拟滚轮上下码 (23=上, 24=下): 匹配垂直滚轮方向
+                if code == KeyCode.scrollWheelUp || code == KeyCode.scrollWheelDown {
+                    guard event.isVerticalScrollEvent else { return false }
+                    let deltaY = event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+                    if code == KeyCode.scrollWheelUp { return deltaY < 0 }
+                    if code == KeyCode.scrollWheelDown { return deltaY > 0 }
+                    return false
+                }
+                // 普通鼠标按键: 仅匹配鼠标按键 DOWN 事件 (排除 scrollWheel —— 滚轮事件的
+                // mouseEventButtonNumber 通常为 2, 会误匹配中键绑定)
+                guard event.isMouseEvent else { return false }
                 return code == Int(event.getIntegerValueField(.mouseEventButtonNumber))
         }
     }
-    /// Equatable
+    /// Equatable (修饰键使用掩码比较, 忽略系统内部标志位)
     static func == (lhs: RecordedEvent, rhs: RecordedEvent) -> Bool {
+        let mask = KeyCode.modifiersMask
         return lhs.type == rhs.type &&
                lhs.code == rhs.code &&
-               lhs.modifiers == rhs.modifiers
+               (UInt64(lhs.modifiers) & mask) == (UInt64(rhs.modifiers) & mask)
     }
 }
 
 // MARK: - ButtonBinding
-/// 按钮绑定 - 将录制的事件与系统快捷键关联
+/// 按钮绑定 - 将触发事件与键盘快捷键关联
 struct ButtonBinding: Codable, Equatable {
 
     // MARK: - 数据字段
@@ -162,11 +200,14 @@ struct ButtonBinding: Codable, Equatable {
     /// 唯一标识符
     let id: UUID
 
-    /// 录制的触发事件
+    /// 录制的触发事件 (鼠标按键 / 倾斜滚轮)
     let triggerEvent: RecordedEvent
 
-    /// 绑定的系统快捷键名称
-    let systemShortcutName: String
+    /// 触发时必须已按住的第二个鼠标按键 (nil = 单键模式)
+    let holdButton: UInt16?
+
+    /// 绑定的目标键盘快捷键 (nil = 未绑定)
+    let targetShortcut: RecordedEvent?
 
     /// 是否启用
     var isEnabled: Bool
@@ -176,17 +217,16 @@ struct ButtonBinding: Codable, Equatable {
 
     // MARK: - 计算属性
 
-    /// 获取系统快捷键对象
-    var systemShortcut: SystemShortcut.Shortcut? {
-        return SystemShortcut.getShortcut(named: systemShortcutName)
-    }
+    /// 是否已绑定目标快捷键
+    var isBound: Bool { targetShortcut != nil }
 
     // MARK: - 初始化
 
-    init(id: UUID = UUID(), triggerEvent: RecordedEvent, systemShortcutName: String, isEnabled: Bool = true) {
+    init(id: UUID = UUID(), triggerEvent: RecordedEvent, holdButton: UInt16? = nil, targetShortcut: RecordedEvent? = nil, isEnabled: Bool = false) {
         self.id = id
         self.triggerEvent = triggerEvent
-        self.systemShortcutName = systemShortcutName
+        self.holdButton = holdButton
+        self.targetShortcut = targetShortcut
         self.isEnabled = isEnabled
         self.createdAt = Date()
     }

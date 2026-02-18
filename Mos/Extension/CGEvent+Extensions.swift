@@ -146,8 +146,46 @@ extension CGEvent {
         }
     }
 
+    /// 是否为倾斜滚轮事件 (Logi 等鼠标的水平拨动)
+    /// - 排除触控板: 触控板有 ScrollPhase 或 MomentumPhase
+    /// - 必须有水平分量, 且水平分量大于垂直分量 (区别于普通滚动)
+    var isTiltWheelEvent: Bool {
+        guard type == .scrollWheel else { return false }
+        // 触控板事件有非零的 Phase 或 ScrollCount, 排除之
+        guard getDoubleValueField(.scrollWheelEventScrollPhase) == 0 &&
+              getDoubleValueField(.scrollWheelEventMomentumPhase) == 0 &&
+              getDoubleValueField(.scrollWheelEventScrollCount) == 0 else { return false }
+        // 必须有水平分量
+        let deltaX = getDoubleValueField(.scrollWheelEventPointDeltaAxis2)
+        guard deltaX != 0 else { return false }
+        // 水平分量必须大于垂直分量 (防止普通斜向滚动误触发)
+        let deltaY = getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+        return abs(deltaX) > abs(deltaY)
+    }
+
+    /// 是否为垂直滚轮事件 (普通鼠标滚轮上下滚动, 非触控板)
+    /// - 排除触控板: 触控板有 ScrollPhase 或 MomentumPhase
+    /// - 必须有垂直分量, 且垂直分量大于等于水平分量 (与倾斜滚轮互补)
+    var isVerticalScrollEvent: Bool {
+        guard type == .scrollWheel else { return false }
+        // 触控板事件有非零的 Phase 或 ScrollCount, 排除之
+        guard getDoubleValueField(.scrollWheelEventScrollPhase) == 0 &&
+              getDoubleValueField(.scrollWheelEventMomentumPhase) == 0 &&
+              getDoubleValueField(.scrollWheelEventScrollCount) == 0 else { return false }
+        // 必须有垂直分量
+        let deltaY = getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+        guard deltaY != 0 else { return false }
+        // 垂直分量必须大于等于水平分量 (与倾斜滚轮的条件互补)
+        let deltaX = getDoubleValueField(.scrollWheelEventPointDeltaAxis2)
+        return abs(deltaY) >= abs(deltaX)
+    }
+
     /// 事件是否有效
     var isRecordable: Bool {
+        // 倾斜滚轮事件 (无需修饰键即可录制, 类似鼠标侧键)
+        if isTiltWheelEvent {
+            return true
+        }
         // 键盘事件
         if isKeyboardEvent {
             // F键允许无修饰键录制
@@ -189,6 +227,20 @@ extension CGEvent {
         // 修饰键
         if !modifierString.isEmpty {
             components.append(modifierString)
+        }
+        // 倾斜滚轮
+        if isTiltWheelEvent {
+            let deltaX = getDoubleValueField(.scrollWheelEventPointDeltaAxis2)
+            let code: UInt16 = deltaX > 0 ? KeyCode.scrollWheelRight : KeyCode.scrollWheelLeft
+            components.append(KeyCode.mouseMap[code] ?? "🖱↔")
+            return components
+        }
+        // 垂直滚轮
+        if isVerticalScrollEvent {
+            let deltaY = getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+            let code: UInt16 = deltaY < 0 ? KeyCode.scrollWheelUp : KeyCode.scrollWheelDown
+            components.append(KeyCode.mouseMap[code] ?? "🖱↕")
+            return components
         }
         // 键盘
         if isKeyboardEvent {

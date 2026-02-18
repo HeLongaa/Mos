@@ -21,6 +21,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 读取用户设置
         Options.shared.readOptions()
+        // 应用鼠标速度/加速度设置（不依赖 Accessibility 权限，立即生效）
+        MouseCore.shared.apply()
         
         // DEBUG: 直接弹出设置窗口
         #if DEBUG
@@ -44,7 +46,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // 运行后启动滚动处理
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         startWithAccessibilityPermissionsChecker(nil)
-        UpdateManager.shared.scheduleCheckOnAppStartIfNeeded()
     }
 
     // 用户双击打开应用程序
@@ -62,6 +63,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ aNotification: Notification) {
         ScrollCore.shared.disable()
         ButtonCore.shared.disable()
+        MouseCore.shared.restore()
     }
     
     // 检查是否有访问 accessibility 权限, 如果有则启动滚动处理, 并结束计时器

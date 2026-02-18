@@ -42,6 +42,14 @@ struct OptionItem {
         static let Bindings = "buttonBindings"
     }
 
+    struct Mouse {
+        static let Enabled = "mouseEnabled"
+        static let Speed = "mouseSpeed"
+        static let Acceleration = "mouseAcceleration"
+        // Legacy key for migration
+        static let DisableAcceleration = "mouseDisableAcceleration"
+    }
+
     struct Application {
         static let Allowlist = "allowlist"
         static let Applications = "applications"
@@ -62,8 +70,6 @@ class Options {
     
     // 常规
     var general = OPTIONS_GENERAL_DEFAULT()
-    // 更新
-    var update = OPTIONS_UPDATE_DEFAULT()
     // 滚动
     var scroll = OPTIONS_SCROLL_DEFAULT() {
         didSet { Options.shared.saveOptions() }
@@ -72,6 +78,8 @@ class Options {
     var buttons = OPTIONS_BUTTONS_DEFAULT() {
         didSet { Options.shared.saveOptions() }
     }
+    // 鼠标
+    var mouse = OPTIONS_MOUSE_DEFAULT()
     // 应用
     var application = OPTIONS_APPLICATION_DEFAULT() {
         didSet { Options.shared.saveOptions() }
@@ -92,9 +100,6 @@ extension Options {
         // 常规
         general.autoLaunch = LoginServiceKit.isExistLoginItems(at: Bundle.main.bundlePath)
         general.hideStatusItem = UserDefaults.standard.bool(forKey: OptionItem.General.HideStatusItem)
-        // 更新
-        update.checkOnAppStart = UserDefaults.standard.bool(forKey: OptionItem.Update.CheckOnAppStart)
-        update.includingBetaVersion = UserDefaults.standard.bool(forKey: OptionItem.Update.IncludingBetaVersion)
         // 滚动
         scroll.smooth = UserDefaults.standard.bool(forKey: OptionItem.Scroll.Smooth)
         scroll.reverse = UserDefaults.standard.bool(forKey: OptionItem.Scroll.Reverse)
@@ -132,6 +137,21 @@ extension Options {
         }
         // 按钮绑定
         buttons.binding = loadButtonsData()
+        // 鼠标
+        mouse.enabled = UserDefaults.standard.bool(forKey: OptionItem.Mouse.Enabled)
+        if let storedSpeed = UserDefaults.standard.object(forKey: OptionItem.Mouse.Speed) as? Double {
+            mouse.speed = storedSpeed
+        } else {
+            mouse.speed = OPTIONS_MOUSE_DEFAULT().speed
+        }
+        // 加速度: 优先读取新 key，如无则从旧 disableAcceleration 迁移
+        if let storedAccel = UserDefaults.standard.object(forKey: OptionItem.Mouse.Acceleration) as? Double {
+            mouse.acceleration = storedAccel
+        } else if UserDefaults.standard.bool(forKey: OptionItem.Mouse.DisableAcceleration) {
+            mouse.acceleration = 0  // 旧版 "禁用加速度" 迁移为 acceleration=0
+        } else {
+            mouse.acceleration = OPTIONS_MOUSE_DEFAULT().acceleration
+        }
         // 应用
         application.allowlist = UserDefaults.standard.bool(forKey: OptionItem.Application.Allowlist)
         application.applications = loadApplicationsData()
@@ -146,9 +166,6 @@ extension Options {
             UserDefaults.standard.set("optionsExist", forKey: OptionItem.General.OptionsExist)
             // 常规
             UserDefaults.standard.set(general.hideStatusItem, forKey: OptionItem.General.HideStatusItem)
-            // 更新
-            UserDefaults.standard.set(update.checkOnAppStart, forKey: OptionItem.Update.CheckOnAppStart)
-            UserDefaults.standard.set(update.includingBetaVersion, forKey: OptionItem.Update.IncludingBetaVersion)
             // 滚动
             UserDefaults.standard.set(scroll.smooth, forKey: OptionItem.Scroll.Smooth)
             UserDefaults.standard.set(scroll.reverse, forKey: OptionItem.Scroll.Reverse)
@@ -173,6 +190,10 @@ extension Options {
             }
             // 按钮绑定
             saveButtonBindingsData()
+            // 鼠标
+            UserDefaults.standard.set(mouse.enabled, forKey: OptionItem.Mouse.Enabled)
+            UserDefaults.standard.set(mouse.speed, forKey: OptionItem.Mouse.Speed)
+            UserDefaults.standard.set(mouse.acceleration, forKey: OptionItem.Mouse.Acceleration)
         }
     }
 

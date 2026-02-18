@@ -175,13 +175,13 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "el" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
@@ -193,61 +193,61 @@
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "tr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "uk" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "zh-Hant-HK" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "zh-Hant-TW" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         }
@@ -1597,7 +1597,7 @@
     },
     "Aur-fR-tik.title" : {
       "comment" : "Class = \"NSTextFieldCell\"; title = \"Current Version\"; ObjectID = \"Aur-fR-tik\";",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3695,7 +3695,7 @@
     },
     "EWu-DP-7Gj.title" : {
       "comment" : "Class = \"NSViewController\"; title = \"Updates\"; ObjectID = \"EWu-DP-7Gj\";",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -6397,6 +6397,18 @@
         }
       }
     },
+    "MOS-VC-001.title" : {
+      "comment" : "Class = \"NSViewController\"; title = \"Mouse\"; ObjectID = \"MOS-VC-001\";",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Mouse"
+          }
+        }
+      }
+    },
     "n8O-2V-Zob.title" : {
       "comment" : "Class = \"NSTextFieldCell\"; title = \"Seçkin Kükrer(@LeaveNhA)\"; ObjectID = \"n8O-2V-Zob\";",
       "extractionState" : "extracted_with_value",
@@ -7147,18 +7159,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "3.90"
-          }
-        }
-      }
-    },
-    "Qx7-hF-cCG.title" : {
-      "comment" : "Class = \"NSButtonCell\"; title = \"Including beta version\"; ObjectID = \"Qx7-hF-cCG\";",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Including beta version"
           }
         }
       }
@@ -8004,7 +8004,7 @@
     },
     "T9f-TL-GYj.title" : {
       "comment" : "Class = \"NSButtonCell\"; title = \"Check Now\"; ObjectID = \"T9f-TL-GYj\";",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -8885,7 +8885,7 @@
     },
     "vdI-K4-SBh.title" : {
       "comment" : "Class = \"NSTextFieldCell\"; title = \"Check for updates:\"; ObjectID = \"vdI-K4-SBh\";",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -10038,13 +10038,13 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "el" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
@@ -10056,74 +10056,62 @@
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "tr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "uk" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "zh-Hant-HK" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
           }
         },
         "zh-Hant-TW" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Mos"
-          }
-        }
-      }
-    },
-    "Yj9-j0-202.title" : {
-      "comment" : "Class = \"NSButtonCell\"; title = \"Check on app start\"; ObjectID = \"Yj9-j0-202\";",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Check on app start"
           }
         }
       }
